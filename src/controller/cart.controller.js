@@ -7,7 +7,7 @@ const productModel = require("../models/product.model");
 const variantMOdel = require("../models/variant.model");
 const { validateCart } = require("../validation/cart.validation");
 const couponModel = require("../models/cupon.model");
-const { getIo } = require("../Soket/server");
+const { getIo } = require("../Socket/server");
 
 // apply coupon to calculate discount price
 const applyCoupn = async (totalPrice = 0, couponCode = "") => {
