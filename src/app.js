@@ -4,7 +4,8 @@ const cookieParser = require("cookie-parser");
 const { globalErrorHandeler } = require("./utils/globalErrorHandeler");
 const app = express();
 const http = require("http");
-const { initSocket } = require("./Soket/server");
+const { initSocket } = require('./Soket/server');
+
 
 const server = http.createServer(app);
 const io = initSocket(server);
