@@ -1,7 +1,7 @@
 const express = require("express");
 const categoryController = require("../../controller/category.controller");
 const { upload } = require("../../midleware/multer.midleware");
-const subcategorycontroller = require ('../../controller/Subcategory.controller');
+const subcategorycontroller = require ('../../controller/subcategory.controller.js');
 const _ = express.Router();
 
 

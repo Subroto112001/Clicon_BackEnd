@@ -4,18 +4,16 @@ const cookieParser = require("cookie-parser");
 const { globalErrorHandeler } = require("./utils/globalErrorHandeler");
 const app = express();
 const http = require("http");
-const { initSocket } = require("../src/Socket/server");
+const { initSocket } = require("./Soket/server");
 
 const server = http.createServer(app);
 const io = initSocket(server);
 /**
  * todo : All MidleWare
  * */
-app.use(
-  cors({
+app.use(cors({
     origin: ["http://localhost:5173"],
-  })
-);
+}));
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
