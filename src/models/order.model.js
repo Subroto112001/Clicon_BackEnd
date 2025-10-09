@@ -41,7 +41,7 @@ const orderSchema = new Schema({
   },
   paymentMethod: {
     type: String,
-    enum: ["cod", "sslcommerse"],
+    enum: ["cod", "sslcommerze"],
     required: true,
   },
   paymentStatus: {

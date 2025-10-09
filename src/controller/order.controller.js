@@ -11,11 +11,12 @@ const deliveryChargeModel = require("../models/deliveryCharge.model");
 const crypto = require("crypto");
 const invoiceModel = require("../models/invoice.model");
 const SSLCommerzPayment = require("sslcommerz-lts");
+const { orderConfirmation } = require("../TemplateEmail/Template");
 
 // ssl Commerze
 
-const store_id=process.env.SSL_STOREID;
-const store_passwd=process.env.SSL_STORE_PASSWORD;
+const store_id = process.env.SSL_STOREID;
+const store_passwd = process.env.SSL_STORE_PASSWORD;
 const is_live = process.env.NODE_ENV == "development" ? false : true;
 
 // apply deliveryCharge
@@ -86,15 +87,18 @@ exports.makeAorder = asyncHandeler(async (req, res) => {
 
     const { name, charge } = await applyDeliveryCharge(deliveryCharge);
 
-    orderInstanse.finalAmount = Math.round(cart.finalAmount + charge);
-    orderInstanse.discountAmount = cart.discountAmount;
-    orderInstanse.shippingInfo.deliveryZone = name;
-
     // @desc now make transaction id
     const transactionId = `INV-${crypto
       .randomUUID()
       .split("-")[0]
       .toLocaleUpperCase()}`;
+
+    
+
+    orderInstanse.finalAmount = Math.round(cart.finalAmount + charge);
+    orderInstanse.discountAmount = cart.discountAmount;
+    orderInstanse.shippingInfo.deliveryZone = name;
+    orderInstanse.totalQuantity = cart.totalQuantity;
 
     // @desc generate invoice
     const invoice = await invoiceModel.create({
@@ -106,14 +110,14 @@ exports.makeAorder = asyncHandeler(async (req, res) => {
       deliveryChargeAmount: charge,
     });
 
+    orderInstanse.invoiceId = invoice.invoiceId;
+    orderInstanse.transactionId = transactionId;
+
     // now handle payment action
     if (paymentMethod == "cod") {
       orderInstanse.paymentMethod = "cod";
       orderInstanse.paymentStatus = "Pending";
-      orderInstanse.transactionId = transactionId;
       orderInstanse.orderStatus = "Pending";
-      orderInstanse.invoiceId = invoice.invoiceId;
-      orderInstanse.totalQuantity = cart.totalQuantity;
     } else {
       // here we work for sslcommerce
       const data = {
@@ -135,18 +139,35 @@ exports.makeAorder = asyncHandeler(async (req, res) => {
         cus_add1: orderInstanse.shippingInfo.address,
         cus_postcode: "1000",
         cus_country: "Bangladesh",
-        cus_phone: "01711111111",
+        cus_phone: orderInstanse.shippingInfo.phone,
         // cus_fax: "01711111111",
-        ship_name: "Customer Name",
-        ship_add1: "Dhaka",
+        ship_name: orderInstanse.shippingInfo.fullname,
+        ship_add1: orderInstanse.shippingInfo.address,
         ship_city: "Dhaka",
         ship_postcode: 1000,
         ship_country: "Bangladesh",
       };
       const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live);
       const sslczResponse = await sslcz.init(data);
-      console.log(sslczResponse.GatewayPageURL);
-      
+      if (!sslczResponse) {
+        throw new customError(501, "Payment Failed");
+      }
+      orderInstanse.paymentMethod = "sslcommerze";
+      orderInstanse.paymentStatus = "Pending";
+      orderInstanse.orderStatus = "Pending";
+      orderInstanse.paymentGatewayData = sslczResponse;
+
+      console.log("From Order Controller", sslczResponse.GatewayPageURL);
+      apiResponse.senSuccess(
+        res,
+        200,
+        "EasyCheckOut Payment Url",
+        sslczResponse.GatewayPageURL
+      );
+    }
+
+    if (shippingInfo.email) {
+      orderConfirmation(orderInstanse.items);
     }
   } catch (error) {
     console.log("Error From Order Controller makeorder", error);

@@ -101,3 +101,159 @@ exports.resetPasswordTemplate = (
 </html>
 `;
 };
+
+
+// order template
+exports.orderConfirmation = (cartItem) => {
+  console.log("cartItem From template:-",cartItem);
+  
+  return `<!DOCTYPE html>
+<html lang="en" style="font-family: Arial, sans-serif;">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Order Confirmation</title>
+    <style>
+      body {
+        background-color: #f5f5f5;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        max-width: 600px;
+        margin: 30px auto;
+        background-color: #ffffff;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      }
+      .header {
+        background-color: #0d6efd;
+        color: #ffffff;
+        padding: 20px;
+        text-align: center;
+      }
+      .header h1 {
+        margin: 0;
+        font-size: 22px;
+      }
+      .content {
+        padding: 25px;
+        color: #333333;
+      }
+      .content h2 {
+        color: #0d6efd;
+        font-size: 18px;
+      }
+      .order-details {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+      }
+      .order-details th,
+      .order-details td {
+        border: 1px solid #ddd;
+        padding: 10px;
+        text-align: left;
+      }
+      .order-details th {
+        background-color: #f3f3f3;
+      }
+      .total {
+        font-weight: bold;
+        color: #0d6efd;
+      }
+      .footer {
+        background-color: #f9f9f9;
+        text-align: center;
+        padding: 15px;
+        font-size: 13px;
+        color: #888;
+      }
+      .btn {
+        display: inline-block;
+        margin-top: 20px;
+        padding: 10px 20px;
+        background-color: #0d6efd;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        font-weight: bold;
+      }
+      .btn:hover {
+        background-color: #0b5ed7;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Thank You for Your Order!</h1>
+      </div>
+
+      <div class="content">
+        <p>Hi <strong>{{customerName}}</strong>,</p>
+        <p>
+          We’ve received your order <strong>#{{orderId}}</strong> and it’s now
+          being processed. Here’s a summary of your purchase:
+        </p>
+
+        <h2>Order Details</h2>
+        <table class="order-details">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Qty</th>
+              <th>Price</th>
+            </tr>
+          </thead>
+          <tbody>
+           
+            ${cartItem.map(
+              (item) =>
+                `<tr>
+                <td>${item.product ? item.product.name : item.variant.name}</td>
+                <td>
+                  $
+                  {item.product ? item.product.quantity : item.variant.quantity}
+                </td>
+                <td>
+                  ${item.product ? item.product.price : item.variant.price}
+                </td>
+              </tr>`
+            )}
+            <tr>
+              <td colspan="2" class="total">Delivery Charge</td>
+              <td>{{deliveryCharge}}</td>
+            </tr>
+            <tr>
+              <td colspan="2" class="total">${item.product ?item.product.totalQuantity : item.variant.totalQuantity}</td>
+              <td><strong>${item.product ? item.product.finalAmount : item.variant.finalAmount}</strong></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p>
+          Shipping Address:<br />
+          {{shippingInfo.fullname}}<br />
+          {{shippingInfo.address}}<br />
+          {{shippingInfo.phone}}
+        </p>
+
+        <a href="{{orderTrackingUrl}}" class="btn">Track Your Order</a>
+
+        <p style="margin-top: 25px;">
+          If you have any questions, feel free to
+          <a href="mailto:support@yourshop.com">contact us</a>.
+        </p>
+      </div>
+
+      <div class="footer">
+        <p>© {{year}} YourShop. All rights reserved.</p>
+      </div>
+    </div>
+  </body>
+</html>
+`;
+}
