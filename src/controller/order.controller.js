@@ -168,6 +168,7 @@ exports.makeAorder = asyncHandeler(async (req, res) => {
 
     if (shippingInfo.email) {
       orderConfirmation(orderInstanse.items);
+     await mailSender(shippingInfo.email, orderConfirmation), "order Confirmation";
     }
   } catch (error) {
     console.log("Error From Order Controller makeorder", error);

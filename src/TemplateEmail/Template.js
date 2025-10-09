@@ -228,8 +228,8 @@ exports.orderConfirmation = (cartItem) => {
               <td>{{deliveryCharge}}</td>
             </tr>
             <tr>
-              <td colspan="2" class="total">${item.product ?item.product.totalQuantity : item.variant.totalQuantity}</td>
-              <td><strong>${item.product ? item.product.finalAmount : item.variant.finalAmount}</strong></td>
+              <td colspan="2" class="total">{item.product ?item.product.totalQuantity : item.variant.totalQuantity}</td>
+              <td><strong>{item.product ? item.product.finalAmount : item.variant.finalAmount}</strong></td>
             </tr>
           </tbody>
         </table>
