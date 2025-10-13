@@ -39,9 +39,7 @@ exports.paymentCancel = asyncHandeler(async (req, res) => {
 });
  
 exports.paymentipn = asyncHandeler(async (req, res) => {
-  console.log("From Payment ipn", req.body);
-  res.redirect("http://www.google.com");
-
-  apiResponse.senSuccess(res, 200, "Payment ipn", req.body);
+  console.log("IPN HIT ✅", req.body);
+  return res.status(200).json({ message: "IPN received", data: req.body });
 });
  
