@@ -7,21 +7,23 @@ exports.paymentSuccess = asyncHandeler(async (req, res) => {
   console.log("From Payment Success", req.body);
   const { tran_id, val_id } = req.body;
 
-  const updateOrderModelSSlcOmerzInfo = await orderModel.findOneAndUpdate(
+  const updatedOrder = await orderModel.findOneAndUpdate(
+    { transactionId: tran_id },
     {
-      transactionId: tran_id,
+      paymentStatus: "Success",
+      orderStatus: "Confirmed",
+      validationId: val_id,
+      paymentGatewayData: req.body,
     },
-    {
-      paymentStatus: "VALID" && "Success",
-      transactionId: tran_id,
-      valid: val_id,
-      paymentGatewayData : req.body,
-    }
+    { new: true }
   );
 
-  res.redirect("http://www.google.com");
+  if (!updatedOrder) {
+    throw new customError(404, "Order not found");
+  }
 
-  apiResponse.senSuccess(res, 200, "Payment successfull", req.body);
+  // Only redirect - don't send apiResponse after redirect
+  return res.redirect(`https://www.google.com/`);
 });
 
 exports.paymentFailed = asyncHandeler(async (req, res) => {
@@ -37,9 +39,25 @@ exports.paymentCancel = asyncHandeler(async (req, res) => {
 
   apiResponse.senSuccess(res, 200, "Payment cancel", req.body);
 });
- 
+
 exports.paymentipn = asyncHandeler(async (req, res) => {
   console.log("IPN HIT ✅", req.body);
-  return res.status(200).json({ message: "IPN received", data: req.body });
+
+  const { tran_id, val_id, status } = req.body;
+
+  // Update order based on IPN data
+  if (status === "VALID" || status === "VALIDATED") {
+    await orderModel.findOneAndUpdate(
+      { transactionId: tran_id },
+      {
+        paymentStatus: "Success",
+        orderStatus: "Confirmed",
+        validationId: val_id,
+        paymentGatewayData: req.body,
+      }
+    );
+  }
+
+  // MUST return 200 OK to SSLCommerz
+  return res.status(200).json({ message: "IPN received successfully" });
 });
- 
