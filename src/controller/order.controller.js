@@ -12,6 +12,7 @@ const crypto = require("crypto");
 const invoiceModel = require("../models/invoice.model");
 const SSLCommerzPayment = require("sslcommerz-lts");
 const { orderConfirmation } = require("../TemplateEmail/Template");
+const { smsSender, mailSender } = require("../helpers/helper");
 
 // ssl Commerze
 
@@ -93,8 +94,6 @@ exports.makeAorder = asyncHandeler(async (req, res) => {
       .split("-")[0]
       .toLocaleUpperCase()}`;
 
-    
-
     orderInstanse.finalAmount = Math.round(cart.finalAmount + charge);
     orderInstanse.discountAmount = cart.discountAmount;
     orderInstanse.shippingInfo.deliveryZone = name;
@@ -114,12 +113,34 @@ exports.makeAorder = asyncHandeler(async (req, res) => {
     orderInstanse.transactionId = transactionId;
 
     // now handle payment action
+    // For COD payment (around line 168 in your code)
     if (paymentMethod == "cod") {
       orderInstanse.paymentMethod = "cod";
       orderInstanse.paymentStatus = "Pending";
       orderInstanse.orderStatus = "Pending";
+
+      // Save the order first
+      await orderInstanse.save();
+
+      if (shippingInfo.email) {
+        const emailTemplate = orderConfirmation({
+          items: orderInstanse.items,
+          shippingInfo: orderInstanse.shippingInfo,
+          invoiceId: orderInstanse.invoiceId,
+          deliveryCharge: charge,
+          totalQuantity: orderInstanse.totalQuantity,
+          finalAmount: orderInstanse.finalAmount,
+          discountAmount: orderInstanse.discountAmount,
+        });
+        sendEmail(shippingInfo.email, emailTemplate, "Order Confirm");
+      }
+
+      if (shippingInfo.phone) {
+        const smsRes = await smsSender(shippingInfo.phone, "Order Confirm");
+        console.log(smsRes);
+      }
     } else {
-      // here we work for sslcommerce
+      // For online payment (sslcommerze)
       const data = {
         total_amount: orderInstanse.finalAmount,
         currency: "BDT",
@@ -132,33 +153,53 @@ exports.makeAorder = asyncHandeler(async (req, res) => {
         product_name: "Computer.",
         product_category: "Electronic",
         product_profile: "general",
-        product_category: "Electronic",
-        product_profile: "general",
         cus_name: orderInstanse.shippingInfo.fullname,
         cus_email: orderInstanse.shippingInfo.email,
         cus_add1: orderInstanse.shippingInfo.address,
         cus_postcode: "1000",
         cus_country: "Bangladesh",
         cus_phone: orderInstanse.shippingInfo.phone,
-        // cus_fax: "01711111111",
         ship_name: orderInstanse.shippingInfo.fullname,
         ship_add1: orderInstanse.shippingInfo.address,
         ship_city: "Dhaka",
         ship_postcode: 1000,
         ship_country: "Bangladesh",
       };
+
       const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live);
       const sslczResponse = await sslcz.init(data);
+
       if (!sslczResponse) {
         throw new customError(501, "Payment Failed");
       }
+
       orderInstanse.paymentMethod = "sslcommerze";
       orderInstanse.paymentStatus = "Pending";
       orderInstanse.orderStatus = "Pending";
       orderInstanse.paymentGatewayData = sslczResponse;
 
-      console.log("From Order Controller", sslczResponse.GatewayPageURL);
-      apiResponse.senSuccess(
+      // Save the order first
+      await orderInstanse.save();
+
+      if (shippingInfo.email) {
+        const emailTemplate = orderConfirmation({
+          items: orderInstanse.items,
+          shippingInfo: orderInstanse.shippingInfo,
+          invoiceId: orderInstanse.invoiceId,
+          deliveryCharge: charge,
+          totalQuantity: orderInstanse.totalQuantity,
+          finalAmount: orderInstanse.finalAmount,
+          discountAmount: orderInstanse.discountAmount,
+        });
+        sendEmail(shippingInfo.email, emailTemplate, "Order Confirmation");
+      }
+
+      if (shippingInfo.phone) {
+        const smsRes = await smsSender(shippingInfo.phone, "Order Confirm");
+        console.log(smsRes);
+      }
+
+      return apiResponse.senSuccess(
         res,
         200,
         "EasyCheckOut Payment Url",
@@ -166,10 +207,14 @@ exports.makeAorder = asyncHandeler(async (req, res) => {
       );
     }
 
-    if (shippingInfo.email) {
-      orderConfirmation(orderInstanse.items);
-     await mailSender(shippingInfo.email, orderConfirmation), "order Confirmation";
-    }
+    // For COD - send response after saving
+    await orderInstanse.save();
+    apiResponse.senSuccess(
+      res,
+      200,
+      "Order Placed Successfully",
+      orderInstanse
+    );
   } catch (error) {
     console.log("Error From Order Controller makeorder", error);
     const stockReducePromise = [];
@@ -199,3 +244,8 @@ exports.makeAorder = asyncHandeler(async (req, res) => {
     await Promise.all(stockReducePromise);
   }
 });
+
+const sendEmail = async (email, orderConfirmation, msg) => {
+  const emailInfo = await mailSender(email, orderConfirmation, msg);
+  console.log(emailInfo);
+};

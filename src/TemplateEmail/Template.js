@@ -102,10 +102,24 @@ exports.resetPasswordTemplate = (
 `;
 };
 
-
-// order template
-exports.orderConfirmation = (cartItem) => {
-  console.log("cartItem From template:-",cartItem);
+// Fixed order template
+exports.orderConfirmation = (orderData) => {
+  console.log("Order Data From template:", orderData);
+  
+  // Generate cart items HTML
+  const cartItemsHTML = orderData.items.map(item => {
+    const productName = item.product ? item.product.name : item.variant.name;
+    const quantity = item.quantity;
+    const price = item.product ? item.product.price : item.variant.price;
+    
+    return `
+      <tr>
+        <td>${productName}</td>
+        <td>${quantity}</td>
+        <td>৳${price}</td>
+      </tr>
+    `;
+  }).join('');
   
   return `<!DOCTYPE html>
 <html lang="en" style="font-family: Arial, sans-serif;">
@@ -193,10 +207,10 @@ exports.orderConfirmation = (cartItem) => {
       </div>
 
       <div class="content">
-        <p>Hi <strong>{{customerName}}</strong>,</p>
+        <p>Hi <strong>${orderData.shippingInfo.fullname}</strong>,</p>
         <p>
-          We’ve received your order <strong>#{{orderId}}</strong> and it’s now
-          being processed. Here’s a summary of your purchase:
+          We've received your order <strong>#${orderData.invoiceId}</strong> and it's now
+          being processed. Here's a summary of your purchase:
         </p>
 
         <h2>Order Details</h2>
@@ -209,39 +223,28 @@ exports.orderConfirmation = (cartItem) => {
             </tr>
           </thead>
           <tbody>
-           
-            ${cartItem.map(
-              (item) =>
-                `<tr>
-                <td>${item.product ? item.product.name : item.variant.name}</td>
-                <td>
-                  $
-                  {item.product ? item.product.quantity : item.variant.quantity}
-                </td>
-                <td>
-                  ${item.product ? item.product.price : item.variant.price}
-                </td>
-              </tr>`
-            )}
+            ${cartItemsHTML}
             <tr>
               <td colspan="2" class="total">Delivery Charge</td>
-              <td>{{deliveryCharge}}</td>
+              <td>৳${orderData.deliveryCharge}</td>
             </tr>
             <tr>
-              <td colspan="2" class="total">{item.product ?item.product.totalQuantity : item.variant.totalQuantity}</td>
-              <td><strong>{item.product ? item.product.finalAmount : item.variant.finalAmount}</strong></td>
+              <td colspan="2" class="total">Total Items</td>
+              <td>${orderData.totalQuantity}</td>
+            </tr>
+            <tr>
+              <td colspan="2" class="total">Total Amount</td>
+              <td><strong>৳${orderData.finalAmount}</strong></td>
             </tr>
           </tbody>
         </table>
 
         <p>
-          Shipping Address:<br />
-          {{shippingInfo.fullname}}<br />
-          {{shippingInfo.address}}<br />
-          {{shippingInfo.phone}}
+          <strong>Shipping Address:</strong><br />
+          ${orderData.shippingInfo.fullname}<br />
+          ${orderData.shippingInfo.address}<br />
+          ${orderData.shippingInfo.phone}
         </p>
-
-        <a href="{{orderTrackingUrl}}" class="btn">Track Your Order</a>
 
         <p style="margin-top: 25px;">
           If you have any questions, feel free to
@@ -250,10 +253,10 @@ exports.orderConfirmation = (cartItem) => {
       </div>
 
       <div class="footer">
-        <p>© {{year}} YourShop. All rights reserved.</p>
+        <p>© ${new Date().getFullYear()} YourShop. All rights reserved.</p>
       </div>
     </div>
   </body>
 </html>
 `;
-}
+};
