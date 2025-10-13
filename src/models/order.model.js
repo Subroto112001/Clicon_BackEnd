@@ -21,7 +21,7 @@ const orderSchema = new Schema({
       type: String,
       required: false,
     },
-    phone: { type: String, required: false },
+    phone: { type: String, },
     address: { type: String, required: false },
     email: { type: String },
     deliveryZone: {
