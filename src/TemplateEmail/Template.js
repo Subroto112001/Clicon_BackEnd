@@ -104,7 +104,7 @@ exports.resetPasswordTemplate = (
 
 // Fixed order template
 exports.orderConfirmation = (orderData) => {
-  console.log("Order Data From template:", orderData);
+  
   
   // Generate cart items HTML
   const cartItemsHTML = orderData.items.map(item => {
