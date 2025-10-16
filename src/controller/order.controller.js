@@ -333,3 +333,52 @@ const allStatus = [
     }
   );
 });
+exports.getAllOrderStatus = asyncHandeler(async (req, res) => {
+  const allorderstatus = await orderModel.aggregate([
+    {
+      $group: {
+        _id: "$orderStatus",
+        Count: { $sum: 1 },
+        totalAmount: { $sum: "$finalAmount" },
+        totalQuantity: { $sum: "$totalQuantity" },
+        averageAmount: { $avg: "$finalAmount" },
+      },
+    },
+    {$project: {
+      _id: 1,
+      name: "$_id", 
+      Count: 1,
+      totalAmount: 1,
+      totalQuantity: 1,
+      averageAmount: 1,
+    }},
+    {
+      $group: {
+        _id: "null",
+        orderStatusInfo: {
+          $push: {
+            name: "$_id",
+            count: "$Count",
+            total: "$totalAmount",
+            quantity: "$totalQuantity",
+            average: "$averageAmount",
+          },
+        },
+        totalOrder: { $sum: "$Count" },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        orderStatusInfo: 1,
+        totalOrder: 1,
+      },
+    },
+  ]);
+
+  if (!allorderstatus || allorderstatus.length === 0) {
+    throw new customError(404, "Order Status not found");
+  }
+
+  apiResponse.senSuccess(res, 200, "All Order Status", allorderstatus[0]);
+});
