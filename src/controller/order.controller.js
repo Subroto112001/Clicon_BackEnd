@@ -301,3 +301,35 @@ exports.getSingleOrders = asyncHandeler(async (req, res) => {
     throw new customError(404, "Order not found");
   }
 });
+
+// @desc update order info
+exports.updateOrderInfo = asyncHandeler(async (req, res) => {
+  const { id, status, shippingInfo } = req.body;
+const allStatus = [
+  "Pending",
+  "Hold",
+  "Confirmed",
+  "Packaging",
+  "CourierPending",
+];
+  const updateInfo = await orderModel.findOneAndUpdate(
+    { _id: id },
+    {
+      orderStatus: allStatus.includes(status) && status,
+
+      shippingInfo: { ...shippingInfo },
+    },
+    { new: true }
+  );
+  if (!updateInfo) {
+    throw new customError(404, "Order not found");
+  }
+  apiResponse.senSuccess(
+    res,
+    200,
+    "Order Updated Successfully",
+    {
+      orderStatus: updateInfo.orderStatus
+    }
+  );
+});
