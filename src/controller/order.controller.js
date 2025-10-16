@@ -13,6 +13,7 @@ const invoiceModel = require("../models/invoice.model");
 const SSLCommerzPayment = require("sslcommerz-lts");
 const { orderConfirmation } = require("../TemplateEmail/Template");
 const { smsSender, mailSender } = require("../helpers/helper");
+const { axiosinstance } = require("../helpers/axios");
 
 // ssl Commerze
 
@@ -305,17 +306,11 @@ exports.getSingleOrders = asyncHandeler(async (req, res) => {
 // @desc update order info
 exports.updateOrderInfo = asyncHandeler(async (req, res) => {
   const { id, status, shippingInfo } = req.body;
-const allStatus = [
-  "Pending",
-  "Hold",
-  "Confirmed",
-  "Packaging",
-  "CourierPending",
-];
+
   const updateInfo = await orderModel.findOneAndUpdate(
     { _id: id },
     {
-      orderStatus: allStatus.includes(status) && status,
+      orderStatus: status,
 
       shippingInfo: { ...shippingInfo },
     },
@@ -324,15 +319,12 @@ const allStatus = [
   if (!updateInfo) {
     throw new customError(404, "Order not found");
   }
-  apiResponse.senSuccess(
-    res,
-    200,
-    "Order Updated Successfully",
-    {
-      orderStatus: updateInfo.orderStatus
-    }
-  );
+  apiResponse.senSuccess(res, 200, "Order Updated Successfully", {
+    orderStatus: updateInfo.orderStatus,
+  });
 });
+
+// @desc all order status
 exports.getAllOrderStatus = asyncHandeler(async (req, res) => {
   const allorderstatus = await orderModel.aggregate([
     {
@@ -344,14 +336,16 @@ exports.getAllOrderStatus = asyncHandeler(async (req, res) => {
         averageAmount: { $avg: "$finalAmount" },
       },
     },
-    {$project: {
-      _id: 1,
-      name: "$_id", 
-      Count: 1,
-      totalAmount: 1,
-      totalQuantity: 1,
-      averageAmount: 1,
-    }},
+    {
+      $project: {
+        _id: 1,
+        name: "$_id",
+        Count: 1,
+        totalAmount: 1,
+        totalQuantity: 1,
+        averageAmount: 1,
+      },
+    },
     {
       $group: {
         _id: "null",
@@ -381,4 +375,59 @@ exports.getAllOrderStatus = asyncHandeler(async (req, res) => {
   }
 
   apiResponse.senSuccess(res, 200, "All Order Status", allorderstatus[0]);
+});
+
+// @desc get all courierPending Order
+exports.getallCourierPendingOrder = asyncHandeler(async (req, res) => {
+  const courierPending = await orderModel.aggregate([
+    {
+      $match: {
+        orderStatus: "Pending",
+      },
+    },
+    {
+      $project: {
+        paymentGatewayData: 0,
+      },
+    },
+    {
+      $project: {
+        _id: 1,
+        items: 1,
+      },
+    },
+  ]);
+  if (!courierPending) {
+    throw new customError(404, "Courier Pending Order not found");
+  }
+  apiResponse.senSuccess(res, 200, "Courier Pending Order", courierPending);
+});
+// @desc sent to courier controller
+exports.sentToCourier = asyncHandeler(async (req, res) => {
+  const { id } = req.body;
+  const orderInfo = await orderModel.findById(id);
+  const { shippingInfo, finalAmount, transactionId } = orderInfo;
+  const courierData = await axiosinstance.post("/create_order", {
+    invoice: transactionId,
+    recipient_name: shippingInfo.fullname,
+    recipient_phone: shippingInfo.phone,
+    recipient_email: shippingInfo.email,
+    recipient_address: shippingInfo.address,
+    cod_amount: finalAmount,
+  });
+  if (!courierData) {
+    throw new customError(404, "Courier Data not found");
+  }
+  const { consignment } = courierData.data;
+
+  console.log(courierData);
+  orderInfo.courier.name = "Steadfast";
+  orderInfo.courier.trackingId = consignment.tracking_code;
+  orderInfo.courier.rawRespone = consignment;
+  orderInfo.courier.status = consignment.status;
+  orderInfo.orderStatus = consignment.status;
+
+  await orderInfo.save();
+
+  apiResponse.senSuccess(res, 200, "Send Courier Sucessfully", orderInfo);
 });

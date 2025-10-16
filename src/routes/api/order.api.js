@@ -6,4 +6,6 @@ _.route("/make-a-order").post(orderController.makeAorder);
 _.route("/get-all-order").get(orderController.getAllOrders);
 _.route("/update-order").put(orderController.updateOrderInfo);
 _.route("/order-status").get(orderController.getAllOrderStatus);
+_.route("/courier-pending-order").get(orderController.getallCourierPendingOrder);
+_.route("/order-sent-to-courier").post(orderController.sentToCourier);
 module.exports = _;

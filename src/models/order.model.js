@@ -69,7 +69,6 @@ const orderSchema = new Schema({
   },
   orderStatus: {
     type: String,
-    enum: ["Pending", "Hold", "Confirmed", "Packaging", "CourierPending"],
     default: "Pending",
   },
   invoiceId: {
@@ -88,12 +87,12 @@ const orderSchema = new Schema({
     },
     status: { type: String, default: "pending" },
   },
-  orderType: { type: String, default: "complete" },
+ 
   followUp: {
     type: mongoose.Schema.Types.Mixed,
     default: null,
   },
-  isAutoPlaced: { type: Boolean, default: false },
+ 
   totalQuantity: { type: Number, default: 0 },
 });
 
