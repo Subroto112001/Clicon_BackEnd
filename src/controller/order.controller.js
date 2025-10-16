@@ -94,6 +94,30 @@ exports.makeAorder = asyncHandeler(async (req, res) => {
       .split("-")[0]
       .toLocaleUpperCase()}`;
 
+    orderInstanse.items = cart.items.map((item) => {
+      const plainItem = item.toObject();
+      if (plainItem.product && typeof plainItem.product == "object") {
+        plainItem.product = {
+          _id: plainItem.product._id,
+          name: plainItem.product.name,
+          price: plainItem.product.retailPrice,
+          image: plainItem.product.image,
+          totalSale: plainItem.product.totalSale,
+        };
+      }
+
+      if (plainItem.variant && typeof plainItem.variant == "object") {
+        plainItem.variant = {
+          _id: plainItem.variant._id,
+          name: plainItem.variant.name,
+          price: plainItem.variant.retailPrice,
+          image: plainItem.variant.image,
+          totalSale: plainItem.variant.totalSale,
+        };
+      }
+      return plainItem;
+    });
+
     orderInstanse.finalAmount = Math.round(cart.finalAmount + charge);
     orderInstanse.discountAmount = cart.discountAmount;
     orderInstanse.shippingInfo.deliveryZone = name;
@@ -168,7 +192,6 @@ exports.makeAorder = asyncHandeler(async (req, res) => {
 
       const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live);
       const sslczResponse = await sslcz.init(data);
-
       if (!sslczResponse) {
         throw new customError(501, "Payment Failed");
       }
@@ -249,3 +272,32 @@ const sendEmail = async (email, orderConfirmation, msg) => {
   const emailInfo = await mailSender(email, orderConfirmation, msg);
   console.log(emailInfo);
 };
+
+// @desc get all order
+
+exports.getAllOrders = asyncHandeler(async (req, res) => {
+  const orders = await orderModel
+    .find()
+    .populate("deliveryCharge items.product items.variant")
+    .sort({ createdAt: -1 });
+
+  if (!orders.length) {
+    throw new customError(404, "Order not found");
+  }
+
+  console.log(orders);
+
+  apiResponse.senSuccess(res, 200, "All Order", orders);
+});
+
+// @desc get single order
+exports.getSingleOrders = asyncHandeler(async (req, res) => {
+  const orders = await orderModel
+    .find()
+    .populate("deliveryCharge items.product items.variant")
+    .sort({ createdAt: -1 });
+
+  if (!orders.length) {
+    throw new customError(404, "Order not found");
+  }
+});

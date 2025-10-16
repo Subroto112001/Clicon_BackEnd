@@ -15,18 +15,20 @@ const orderSchema = new Schema({
     type: String,
     default: null,
   },
-  items: [],
+  items: [
+    
+  ],
   shippingInfo: {
     fullname: {
       type: String,
       required: false,
     },
-    phone: { type: String, },
+    phone: { type: String },
     address: { type: String, required: false },
     email: { type: String },
     deliveryZone: {
-      type: String
-    }
+      type: String,
+    },
   },
   productWeight: {
     type: Number,
@@ -46,7 +48,7 @@ const orderSchema = new Schema({
   },
   paymentStatus: {
     type: String,
-    enum: ["Pending", "Success", "failed", "cancelled"],
+    enum: ["Pending", "Success", "Failed", "Cancelled"],
     default: "Pending",
   },
   transactionId: {
