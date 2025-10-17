@@ -431,3 +431,32 @@ exports.sentToCourier = asyncHandeler(async (req, res) => {
 
   apiResponse.senSuccess(res, 200, "Send Courier Sucessfully", orderInfo);
 });
+
+// @desc WebHook
+exports.webHook = asyncHandeler(async (req, res) => {
+  const { invoice, status } = req.body;
+  console.log(req.body);
+  console.log(req.headers);
+  res.status(200).json({
+     status: "success",
+     message: "Webhook received successfully.",
+   });
+  return;
+  try {
+    const orderInfo = await orderModel.findOne({ transactionId: invoice });
+    orderInfo.courier.rawRespone = req.body;
+    orderInfo.courier.status = status;
+    orderInfo.orderStatus = status;
+
+    await orderInfo.save();
+     res.status(200).json({
+      status: "success",
+      message: "Webhook received successfully.",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: "Invalid consignment ID.",
+    });
+  }
+});
