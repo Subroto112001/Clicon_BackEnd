@@ -435,13 +435,13 @@ exports.sentToCourier = asyncHandeler(async (req, res) => {
 // @desc WebHook
 exports.webHook = asyncHandeler(async (req, res) => {
   const { invoice, status } = req.body;
-  console.log(req.body);
-  console.log(req.headers);
+  console.log("From Webhook",req.body);
+  console.log( "From Webhook",req.headers);
   res.status(200).json({
      status: "success",
      message: "Webhook received successfully.",
    });
-  return;
+  
   try {
     const orderInfo = await orderModel.findOne({ transactionId: invoice });
     orderInfo.courier.rawRespone = req.body;
