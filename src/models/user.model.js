@@ -1,4 +1,4 @@
-require("dotenv").config()
+require("dotenv").config();
 const mongoose = require("mongoose");
 const { Schema, Types } = mongoose;
 const bcrypt = require("bcrypt");
@@ -51,6 +51,7 @@ const userSchema = new Schema({
   role: {
     type: Types.ObjectId,
     ref: "Role",
+    default: "guest",
   },
   permission: {
     type: Types.ObjectId,
@@ -130,12 +131,10 @@ const userSchema = new Schema({
 userSchema.pre("save", async function (next) {
   if (this.isModified("password")) {
     this.password = await bcrypt.hash(this.password, 10);
-   console.log(this.password);
-   
+    console.log(this.password);
   }
   next();
 });
-
 
 // @desc check already exist this mail
 
@@ -148,12 +147,10 @@ userSchema.pre("save", async function (next) {
   next();
 });
 
-
 // @desc compare hash password
-userSchema.methods.compareHashPassword =async function (humanPass) {
- return await bcrypt.compare(humanPass, this.password);
-}
-
+userSchema.methods.compareHashPassword = async function (humanPass) {
+  return await bcrypt.compare(humanPass, this.password);
+};
 
 // @desc generate access token
 
@@ -168,9 +165,6 @@ userSchema.methods.generateAccessToken = async function () {
     { expiresIn: process.env.ACCESTOKEN_EXPIRE }
   );
 };
-
-
-
 
 // @desc generate refress token
 userSchema.methods.generateRefreshToken = async function () {
