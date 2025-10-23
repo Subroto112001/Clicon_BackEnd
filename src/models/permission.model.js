@@ -16,6 +16,7 @@ const permissionSchema = new Schema(
         type: String,
         enum: ["create", "read", "update", "delete"],
         trim: true,
+        default: ["create", "read", "update", "delete"],
       },
     ],
   },
