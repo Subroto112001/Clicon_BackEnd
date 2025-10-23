@@ -1,8 +1,6 @@
 const mongoose = require("mongoose");
-const { customError } = require("../utils/customError");
-const { types } = require("joi");
 const { Schema, Types } = mongoose;
-
+const { customError } = require("../utils/customError");
 const permissionSchema = new Schema(
   {
     name: {
@@ -24,13 +22,19 @@ const permissionSchema = new Schema(
   }
 );
 
+//existing permission check
 permissionSchema.pre("save", async function (next) {
-  const isexist = await this.constructor.findOne({ name: this.name });
-  if (isexist && isexist._id.toString() !== this._id.toString()) {
-    throw new customError(400, "Permission name already exists");
+  const existingpermission = await this.constructor.findOne({
+    name: this.name,
+  });
+  if (
+    existingpermission &&
+    existingpermission._id.toString() !== this._id.toString()
+  ) {
+    throw new customError(401, "Permission name is already exists!");
   }
   next();
 });
 
 module.exports =
-  mongoose.models.Permission || mongoose.model("Permission", permissionSchema);
+  mongoose.models.Permisson || mongoose.model("Permisson", permissionSchema);

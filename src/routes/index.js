@@ -14,4 +14,5 @@ _.use("/cart", require("./api/cart.api"));
 _.use("/deliveryCharge", require("./api/deliveryCharge.api"))
 _.use("/order", require("./api/order.api"))
 _.use("/payment", require("./api/payment.api"));
+_.use("/permission", require("./api/permission.api"));
 module.exports = _;

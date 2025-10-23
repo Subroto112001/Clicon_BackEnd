@@ -4,7 +4,8 @@
   "main": "index.js",
   "scripts": {
     "start": "nodemon index.js",
-    "seed:permission" : "node src/seeder/permission.js",
+    "seed:permission": "node src/seeder/permission.js",
+    "seed:role": "node src/seeder/role.js",
     "dev": "node index.js",
     "socket": "node src/soket/client.js"
   },

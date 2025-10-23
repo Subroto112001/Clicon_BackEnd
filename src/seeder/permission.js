@@ -3,10 +3,11 @@ const { dbName } = require("../constant/constant");
 const mongoose = require("mongoose");
 const permissionModel = require("../models/permission.model");
 
-
 const DataBaseconnection = async () => {
   try {
-    const databaseconnection = await mongoose.connect(`${process.env.MONGODB_URL}/${dbName}`);
+    const databaseconnection = await mongoose.connect(
+      `${process.env.MONGODB_URL}/${dbName}`
+    );
     console.log("Database Connection sucessfully ", databaseconnection);
     await seededPermission();
   } catch (error) {
