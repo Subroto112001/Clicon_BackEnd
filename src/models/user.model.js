@@ -53,10 +53,12 @@ const userSchema = new Schema({
     ref: "Role",
     default: "guest",
   },
-  permission: {
-    type: Types.ObjectId,
-    ref: "Permission",
-  },
+  permission: [
+    {
+      permissionId: { type: Types.ObjectId, ref: "Permission" },
+      actions: [{ type: String, enum: ["view", "add", "edit", "delete"] }],
+    },
+  ],
   region: {
     type: String,
     trim: true,
