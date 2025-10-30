@@ -9,5 +9,6 @@ _.route("/addUser").post(
   addUserController.addUser
 );
 _.route("/getAllUserByAdmin").get(addUserController.getAllUserByAdmin);
+_.route("/addUser-Permission").post(addUserController.addUserPermission);
 
 module.exports = _;

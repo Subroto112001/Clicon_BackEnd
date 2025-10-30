@@ -60,3 +60,15 @@ exports.getAllUserByAdmin = asyncHandeler(async (req, res) => {
     .populate("role");
   apiResponse.senSuccess(res, 200, "Users retrieved successfully", users);
 });
+
+// @desc add user permission
+exports.addUserPermission = asyncHandeler(async (req, res, next) => {
+  const { userId, permission } = req.body;
+  const user = await userModel.findOne({ _id: userId });
+  if (!user) {
+    throw new customError(404, "User not found");
+  }
+    user.permission = permission;
+  await user.save();
+  apiResponse.senSuccess(res, 200, "Permission added successfully", user);
+});
