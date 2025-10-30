@@ -100,13 +100,13 @@ Your code is ${otp} and it will expire on ${new Date(
 
 exports.Login = asyncHandeler(async (req, res) => {
   const value = await validateUser(req);
-  const { email, phoneNumber, password } = value;
+  const { email, phoneNumber, password, fristName } = value;
 
   const user = await userModel.findOne({
     $or: [{ email }, { phoneNumber }],
   });
 
-  if (!user) {
+  if (!user) { 
     throw new customError(400, "User not found");
   }
 
@@ -140,7 +140,7 @@ exports.Login = asyncHandeler(async (req, res) => {
          verificationLInk,
          otp,
          otpExpireTime
-      );
+       );
        try {
          await mailSender(email, template);
        } catch (error) {

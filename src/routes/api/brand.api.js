@@ -2,9 +2,10 @@ const express = require("express");
 const categoryController = require("../../controller/category.controller");
 const { upload } = require("../../midleware/multer.midleware");
 const _ = express.Router();
-const bandcontroller = require("../../controller/brand.controller")
+const bandcontroller = require("../../controller/brand.controller");
+const { authGurd } = require("../../midleware/authgurd.Middleware");
 
-_.route("/createBrand").post(
+_.route("/createBrand").post(authGurd, 
   upload.fields([{ name: "image", maxCount: 1 }]),
   bandcontroller.createBrand
 );
