@@ -32,10 +32,7 @@ const userSchema = new Schema({
     trim: true,
     required: true,
   },
-  image: {
-    type: String,
-    trim: true,
-  },
+  image: {},
   adress: {
     type: String,
     trim: true,
@@ -48,11 +45,10 @@ const userSchema = new Schema({
     type: Boolean,
     default: false,
   },
-  role: {
-    type: Types.ObjectId,
+  role: [{
+    type: Types.ObjectId, 
     ref: "Role",
-    default: "guest",
-  },
+  }],
   permission: [
     {
       permissionId: { type: Types.ObjectId, ref: "Permission" },
@@ -126,6 +122,10 @@ const userSchema = new Schema({
   isActive: {
     type: Boolean,
   },
+  createdBy: {
+    type: Types.ObjectId,
+    ref: "User",
+  }
 });
 
 // @desc schema model middleware

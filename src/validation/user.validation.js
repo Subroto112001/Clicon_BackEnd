@@ -3,10 +3,10 @@ const { customError } = require("../utils/customError");
 const Joi = require("joi");
 
 const userValidationSchema = Joi.object({
-  fristName: Joi.string().trim().empty().messages({
+  fristName: Joi.string().trim().required().messages({
     "string.empty": "Name is required",
-
-    "name.trim": "Name fill with extra spaces",
+    "any.required": "Name is required",
+    "string.trim": "Name should not contain extra spaces",
   }),
   email: Joi.string()
 
