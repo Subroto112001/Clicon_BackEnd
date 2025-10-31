@@ -2,6 +2,7 @@ require("dotenv").config();
 const { dbName } = require("../constant/constant");
 const mongoose = require("mongoose");
 const permissionModel = require("../models/permission.model");
+const { default: slugify } = require("slugify");
 
 const DataBaseconnection = async () => {
   try {
@@ -62,8 +63,11 @@ const seededPermission = async () => {
         name: "user",
       },
     ];
-
-    const permissionsSeed = await permissionModel.insertMany(permissonData);
+ const finalData = permissonData.map((item) => ({
+   ...item,
+   slug: slugify(item.name, { lower: true }),
+ }));
+    const permissionsSeed = await permissionModel.insertMany(finalData);
     console.log("permission seed sucessfully", permissionsSeed);
   } catch (error) {
     console.log("error", error);

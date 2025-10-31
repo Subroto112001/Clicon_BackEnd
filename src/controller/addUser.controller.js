@@ -4,7 +4,7 @@ const { customError } = require("../utils/customError");
 const userModel = require("../models/user.model");
 const { validateUser } = require("../validation/user.validation");
 const { uploadImageColude } = require("../helpers/Coludinary");
-
+const permissionModel = require("../models/permission.model");
 // @desc add new user
 exports.addUser = asyncHandeler(async (req, res, next) => {
   const value = await validateUser(req);
@@ -68,7 +68,24 @@ exports.addUserPermission = asyncHandeler(async (req, res, next) => {
   if (!user) {
     throw new customError(404, "User not found");
   }
-    user.permission = permission;
+    const permissionsToInsert = [];
+
+    for (const p of permission) {
+      const foundPermission = await permissionModel.findById(p.permissionId);
+      if (!foundPermission) {
+        throw new customError(
+          404,
+          `Permission '${p.permissionName}' not found`
+        );
+      }
+
+      permissionsToInsert.push({
+        permissionId: foundPermission._id,
+        actions: p.actions,
+      });
+    }
+
+    user.permission = permissionsToInsert;
   await user.save();
   apiResponse.senSuccess(res, 200, "Permission added successfully", user);
 });

@@ -4,8 +4,11 @@ const { upload } = require("../../midleware/multer.midleware");
 const _ = express.Router();
 const bandcontroller = require("../../controller/brand.controller");
 const { authGurd } = require("../../midleware/authgurd.Middleware");
+const { authorize } = require("../../midleware/authorize.middleware");
 
-_.route("/createBrand").post(authGurd, 
+_.route("/createBrand").post(
+  authGurd,
+  authorize("brand", "add"),
   upload.fields([{ name: "image", maxCount: 1 }]),
   bandcontroller.createBrand
 );
