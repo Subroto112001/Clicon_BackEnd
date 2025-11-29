@@ -68,24 +68,22 @@ exports.addUserPermission = asyncHandeler(async (req, res, next) => {
   if (!user) {
     throw new customError(404, "User not found");
   }
-    const permissionsToInsert = [];
+  const permissionsToInsert = [];
 
-    for (const p of permission) {
-      const foundPermission = await permissionModel.findById(p.permissionId);
-      if (!foundPermission) {
-        throw new customError(
-          404,
-          `Permission '${p.permissionName}' not found`
-        );
-      }
+  for (const p of permission) {
+    const foundPermission = await permissionModel.findById(p.permissionId);
 
-      permissionsToInsert.push({
-        permissionId: foundPermission._id,
-        actions: p.actions,
-      });
+    if (!foundPermission) {
+      throw new customError(404, `Permission '${p.permissionName}' not found`);
     }
 
-    user.permission = permissionsToInsert;
+    permissionsToInsert.push({
+      permissionId: foundPermission._id,
+      actions: p.actions,
+    });
+  }
+
+  user.permission = permissionsToInsert;
   await user.save();
   apiResponse.senSuccess(res, 200, "Permission added successfully", user);
 });

@@ -5,6 +5,7 @@ const _ = express.Router();
 
 
 _.route("/create-permission").post(permissionController.createPermission);
+_.route("/get-permission").get(permissionController.getAllPermission);
 
 
 module.exports = _;

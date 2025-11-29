@@ -62,6 +62,7 @@ const seededPermission = async () => {
       {
         name: "user",
       },
+      {name: "banner",}
     ];
  const finalData = permissonData.map((item) => ({
    ...item,

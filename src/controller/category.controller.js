@@ -1,4 +1,3 @@
-const { asyncHandeler } = require("../utils/asyncHandeler");
 const { validateCategory } = require("../validation/category.validation");
 const categorymodel = require("../models/category.model");
 const {
@@ -8,11 +7,11 @@ const {
 } = require("../helpers/Coludinary");
 const { apiResponse } = require("../utils/apiResponse");
 const { customError } = require("../utils/customError");
+const { asyncHandeler } = require("../utils/asyncHandeler");
 
 // @desc create category function
 exports.createCategory = asyncHandeler(async (req, res) => {
   const value = await validateCategory(req);
-  console.log(value);
   const cloudeImage = await uploadImageColude(value?.image?.path);
 
   //  save the category into database
@@ -50,7 +49,7 @@ exports.getAllCategory = asyncHandeler(async (req, res) => {
         subCategoryholder: 1,
       },
     },
-    {$sort: {createdAt: -1}}
+    { $sort: { createdAt: -1 } },
   ]);
 
   // error throw
@@ -59,7 +58,6 @@ exports.getAllCategory = asyncHandeler(async (req, res) => {
     throw new customError(404, "No categories found");
   }
 
-  console.log(allCategory);
   // response
 
   apiResponse.senSuccess(
@@ -79,7 +77,6 @@ exports.getSingleCategory = asyncHandeler(async (req, res) => {
   if (!SingleCategoryItem) {
     throw new customError(500, "No category found here");
   }
-  console.log(SingleCategoryItem);
 
   apiResponse.senSuccess(
     res,

@@ -13,7 +13,8 @@ const io = initSocket(server);
  * */
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
+    origin: ["http://localhost:5173", "http://localhost:5174"],
+    credentials: true,
   })
 );
 app.use(express.json());
@@ -26,7 +27,7 @@ app.use(express.static("Public"));
  * */
 
 const apiVersion = process.env.BASE_URL;
-app.use(`/api/v1`, require("./routes/index"));
+app.use(`${apiVersion}`, require("./routes/index"));
 
 /**
  * todo : error handle midleware

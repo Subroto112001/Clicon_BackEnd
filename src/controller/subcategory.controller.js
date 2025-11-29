@@ -20,7 +20,9 @@ exports.createsubcategory = asyncHandeler(async (req, res) => {
     { new: true }
   );
 
-  console.log(category);
+ if (!category) {
+    throw new customError(501, "Subcategory created failed!");
+  }
 
   apiResponse.senSuccess(
     res,
@@ -43,7 +45,7 @@ exports.getallsubcategory = asyncHandeler(async (req, res) => {
   if (!getallsubcategory) {
     throw new customError(404, "Subcategory Not found");
   }
-  console.log(getallsubcategory);
+
   apiResponse.senSuccess(
     res,
     200,
@@ -66,7 +68,7 @@ exports.getSinglesubcategory = asyncHandeler(async (req, res) => {``
   if (!getSignlesubcategory) {
     throw new customError(404, "Subcategory Not found");
   }
-  console.log(getSignlesubcategory);
+ 
   apiResponse.senSuccess(
     res,
     200,

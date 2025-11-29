@@ -16,6 +16,8 @@ _.route("/createBrand").post(
 _.route("/allBrand").get(bandcontroller.getAllbrand);
 _.route("/singleBrand/:slug").get(bandcontroller.getsingleBrand);
 _.route("/updateBrand/:slug").put(
+  authGurd,
+  authorize("brand", "edit"),
   upload.fields([{ name: "image", maxCount: 1 }]),
   bandcontroller.updateBrand
 );

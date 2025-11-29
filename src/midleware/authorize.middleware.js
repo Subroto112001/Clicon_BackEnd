@@ -1,27 +1,32 @@
+
 const { customError } = require("../utils/customError");
 
 const authorize = (resource, action) => {
   return async (req, res, next) => {
     try {
-      
-      await req.user.populate("permission.permissionId");
-
-      const hasPermission = req.user.permission.find((p) => {
-        return p.permissionId?.name === resource && p.actions.includes(action);
-      });
-
-      if (!hasPermission) {
+     
+    
+      const findPermission = req.user.permission.find(
+        (permission) =>
+          permission.permissionId?.name === resource &&
+          permission.actions.includes(action)
+      );
+      if (!findPermission) {
         throw new customError(
-          403,
-          "You are not allowed to access this resource"
-        );
-      }
-
-      next(); // ✅ Pass forward if allowed
+          401,
+          "You are not allowed to access this resource")
+      };
+      console.log(findPermission);
+      req.permission = findPermission;
+      next();
     } catch (error) {
-      next(new customError(403, "You are not allowed to access this resource"));
-    }
-  };
-};
-
-module.exports = { authorize };
+      throw new customError(
+        401,
+        "You are not allowed to access this resource",
+        error
+      );
+    } 
+  }
+}
+ 
+module.exports = { authorize }; 

@@ -163,8 +163,8 @@ userSchema.methods.generateAccessToken = async function () {
       email: this.email,
       role: this.role,
     },
-    process.env.ACCESTOKEN_SECRET,
-    { expiresIn: process.env.ACCESTOKEN_EXPIRE }
+    process.env.ACCESTOKEN_SECRET?.trim(), // ✅ trim যোগ করুন
+    { expiresIn: process.env.ACCESTOKEN_EXPIRE?.trim() } // ✅ এখানেও
   );
 };
 
@@ -174,11 +174,10 @@ userSchema.methods.generateRefreshToken = async function () {
     {
       userid: this._id,
     },
-    process.env.REFRESHTOKEN_SECRET,
-    { expiresIn: process.env.REFRESHTOKEN_EXPIRE }
+    process.env.REFRESHTOKEN_SECRET?.trim(), // ✅ trim যোগ করুন
+    { expiresIn: process.env.REFRESHTOKEN_EXPIRE?.trim() } // ✅ এখানেও
   );
 };
-
 // @desc verify access token
 userSchema.methods.VerifyAccessToken = function (token) {
   return jwt.verify(token, process.env.ACCESTOKEN_SECRET);

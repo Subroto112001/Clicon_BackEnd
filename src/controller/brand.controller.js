@@ -9,21 +9,17 @@ const {
 const { apiResponse } = require("../utils/apiResponse");
 const { customError } = require("../utils/customError");
 
-
-
-// @desc create a new brand 
-exports.createBrand = asyncHandeler(async (req, res) => { 
+// @desc create a new brand
+exports.createBrand = asyncHandeler(async (req, res) => {
   const value = await validateBrand(req);
-  console.log(value)
+  console.log(value);
   const cloudeImage = await uploadImageColude(value?.image?.path);
-  
 
-   const brand = await brandmodel.create({
-      name: value.name,
-      image: cloudeImage,
-   });
-  
-  
+  const brand = await brandmodel.create({
+    name: value.name,
+    image: cloudeImage,
+  });
+
   if (!brand) {
     throw new customError(400, "Brand creation failed");
   }
@@ -43,9 +39,10 @@ exports.getAllbrand = asyncHandeler(async (req, res) => {
 // @desc get single brand
 exports.getsingleBrand = asyncHandeler(async (req, res) => {
   const { slug } = req.params;
-  
-    const getsingleBrand = await brandmodel
-    .findOne({ slug }).sort({ createdAt: -1 });
+
+  const getsingleBrand = await brandmodel
+    .findOne({ slug })
+    .sort({ createdAt: -1 });
   if (!getsingleBrand) {
     throw new customError(404, "Brand not found");
   }
@@ -54,17 +51,29 @@ exports.getsingleBrand = asyncHandeler(async (req, res) => {
 // @desc update single brand
 exports.updateBrand = asyncHandeler(async (req, res) => {
   const { slug } = req.params;
- 
-  
-  const value = await validateBrand(req);
 
-  
- 
-  const cloudeImage = await uploadImageColude(value?.image?.path);
+  const value = await validateBrand(req);
+  const exitBrand = await brandmodel.findOne({ slug });
+  if (!exitBrand) {
+    throw new customError(404, "Brand not found");
+  }
+  let existImage = exitBrand.image;
+
+  if (value.image) {
+    // delete old image from cloudinary if exists
+    try {
+      if (exitBrand?.image?.public_id) {
+        await deleteCloudinaryFile(exitBrand.image.public_id);
+      }
+      existImage = await uploadImageColude(value?.image?.path);
+    } catch (error) {
+      throw new customError(500, "Image upload failed: " + error.message);
+    }
+  }
 
   const updatedBrand = await brandmodel.findOneAndUpdate(
     { slug },
-    { name: value.name, image: cloudeImage },
+    { name: value.name, image: existImage },
     { new: true }
   );
   if (!updatedBrand) {
@@ -72,7 +81,6 @@ exports.updateBrand = asyncHandeler(async (req, res) => {
   }
   apiResponse.senSuccess(res, 200, "Brand updated successfully", updatedBrand);
 });
-
 
 // @desc delete single brand
 exports.deleteSingleBrand = asyncHandeler(async (req, res) => {

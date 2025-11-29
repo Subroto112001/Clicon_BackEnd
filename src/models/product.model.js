@@ -83,7 +83,7 @@ const productSchema = new Schema(
       default: false,
     },
     category: {
-      type: Types.ObjectId,
+      type: Types.ObjectId, 
       ref: "Category",
       required: true,
     },
@@ -172,12 +172,10 @@ const productSchema = new Schema(
       enum: ["SingleVariant", "MultipleVariant"],
       default: "SingleVariant",
     },
-    warehouseLocation: [
-      {
-        type: Types.ObjectId,
-        ref: "Warehouse",
-      },
-    ],
+    warehouseLocation: {
+      type: String,
+      trim: true,
+    },
     isActive: {
       type: Boolean,
       default: true,

@@ -12,6 +12,7 @@ const {
 const userModel = require("../models/user.model");
 const crypto = require("crypto");
 const { date } = require("joi");
+const jwt = require("jsonwebtoken");
 
 /**
  * todo : registration -----> this function will work for registration
@@ -99,14 +100,22 @@ Your code is ${otp} and it will expire on ${new Date(
  * */
 
 exports.Login = asyncHandeler(async (req, res) => {
-  const value = await validateUser(req);
-  const { email, phoneNumber, password, fristName } = value;
+  const { email, phoneNumber, password } = req.body;
 
-  const user = await userModel.findOne({
-    $or: [{ email }, { phoneNumber }],
-  });
+  if ((!email && !phoneNumber) || !password) {
+    throw new customError(400, "Email or PhoneNumber and Password is required");
+  }
 
-  if (!user) { 
+  let query = {};
+  if (email) {
+    query.email = email;
+  } else if (phoneNumber) {
+    query.phoneNumber = phoneNumber;
+  }
+
+  const user = await userModel.findOne(query);
+
+  if (!user) {
     throw new customError(400, "User not found");
   }
 
@@ -117,97 +126,92 @@ exports.Login = asyncHandeler(async (req, res) => {
 
   // now we will check there that email or phoneNumber verified or not
 
-  const loginMethod = email? "email" : "phoneNumber";
+  const loginMethod = email ? "email" : "phoneNumber";
   let isVerified = false;
 
-
   if (email && user.email) {
-    isVerified = user.isEmailverifyed|| false;
+    isVerified = user.isEmailverifyed || false;
   } else {
-    isVerified = user.isPhoneVerifyed ||false
+    isVerified = user.isPhoneVerifyed || false;
   }
 
   // if we found not verified then
 
-  if(!isVerified) {
-  const otp = crypto.randomInt(100000, 999999);
+  if (!isVerified) {
+    const otp = crypto.randomInt(100000, 999999);
     const otpExpireTime = Date.now() + 10 * 60 * 1000;
-    
+
     if (email && user.email) {
-       const verificationLInk = `http://localhost:5157/verifyemail/${email}`;
-       const template = RegistrationMailTemplate(
-         fristName,
-         verificationLInk,
-         otp,
-         otpExpireTime
-       );
-       try {
-         await mailSender(email, template);
-       } catch (error) {
-         console.error("Email sending failed:", error);
-        throw new customError(400, 'Email Sending Failed, Try Again', error);
-       }
+      const verificationLInk = `http://localhost:5157/verifyemail/${email}`;
+      const template = RegistrationMailTemplate(
+        user.fristName,
+        verificationLInk,
+        otp,
+        otpExpireTime
+      );
+      try {
+        await mailSender(email, template);
+      } catch (error) {
+        console.error("Email sending failed:", error);
+        throw new customError(400, "Email Sending Failed, Try Again", error);
+      }
     }
-    
 
     if (phoneNumber && user.phoneNumber) {
-        const smsBody = `Hey ${user.fristName} 
-Your verification code is ${otp} and it will expire on ${new Date(
-          otpExpireTime
-        ).toLocaleString()}
--Clicon`;
+      const smsBody = `Hey ${user.fristName} 
+      Your verification code is ${otp} and it will expire on ${new Date(
+        otpExpireTime
+      ).toLocaleString()}
+        -Clicon`;
 
-        try {
-          const smsResponse = await smsSender(phoneNumber, smsBody);
-          console.log("SMS Response:", smsResponse);
-        } catch (error) {
-          console.error("SMS sending failed:", error);
-          throw new customError(400,' SMS sending Failed');
-        }
+      try {
+        const smsResponse = await smsSender(phoneNumber, smsBody);
+        console.log("SMS Response:", smsResponse);
+      } catch (error) {
+        console.error("SMS sending failed:", error);
+        throw new customError(400, " SMS sending Failed");
+      }
     }
 
-     await userModel.updateOne(
-       { _id: user._id },
-       {
-         resetPasswordOtp: otp,
-         resetPasswordExpireTime: otpExpireTime,
-       }
-     );
+    await userModel.updateOne(
+      { _id: user._id },
+      {
+        resetPasswordOtp: otp,
+        resetPasswordExpireTime: otpExpireTime,
+      }
+    );
 
-
-return apiResponse.senSuccess(
-  res,
-  200,
-  "Account not verified. Verification code sent.",
-  {
-    verified: false,
-    verificationMethod: loginMethod,
-    message:
-      loginMethod === "email"
-        ? "Please check your email for verification code"
-        : "Please check your phone for verification code",
-    maskedContact:
-      loginMethod === "email"
-        ? email.replace(/(.{2})(.*)(@.*)/, "$1***$3")
-        : phoneNumber.replace(/(\d{3})(\d{4})(\d{4})/, "$1****$3"),
+    return apiResponse.senSuccess(
+      res,
+      200,
+      "Account not verified. Verification code sent.",
+      {
+        verified: false,
+        verificationMethod: loginMethod,
+        message:
+          loginMethod === "email"
+            ? "Please check your email for verification code"
+            : "Please check your phone for verification code",
+        maskedContact:
+          loginMethod === "email"
+            ? email.replace(/(.{2})(.*)(@.*)/, "$1***$3")
+            : phoneNumber.replace(/(\d{3})(\d{4})(\d{4})/, "$1****$3"),
+      }
+    );
   }
-);
-
-  }
-
+  const isProduction = process.env.NODE_ENV === "production";
   const accessToken = await user.generateAccessToken();
   const refreshToken = await user.generateRefreshToken();
 
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "none",
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax", // Use 'none' for production (cross-site), 'lax' for development
     path: "/",
-    maxAge: 15 * 24 * 60 * 60 * 1000,
+    maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 
-  user.refressToken = refreshToken;
-  await user.save();
+  await userModel.updateOne({ _id: user._id }, { refressToken: refreshToken });
 
   apiResponse.senSuccess(res, 200, "Login Successful", {
     accessToken,
@@ -361,22 +365,17 @@ exports.resetPassword = asyncHandeler(async (req, res) => {
  * todo : Logout ------------> this function will work for Log out
  * */
 exports.logout = asyncHandeler(async (req, res) => {
-  console.log("From controller", req.user);
-
-  // now find the user
-
   const finduser = await User.findById(req.user.id);
-  console.log(finduser);
   if (!finduser) {
     throw new customError(401, "User Not Found");
   }
 
   // now clear the cookie
-
+  const isProduction = process.env.NODE_ENV === "production";
   res.clearCookie("refreshToken", {
     httpOnly: true,
     secure: isProduction ? true : false,
-    sameSite: "none",
+    sameSite: isProduction ? "none" : "lax",
     path: "/",
   });
 
@@ -398,27 +397,69 @@ exports.getme = asyncHandeler(async (req, res) => {
   apiResponse.senSuccess(res, 200, "User Get Successfull", finduser);
 });
 
+/*
+ * todo: get user
+ */
+
+exports.getUser = asyncHandeler(async (req, res) => {
+  const { email, phoneNumber } = req.body;
+
+  if (!email && !phoneNumber) {
+    throw new customError(400, "Email or PhoneNumber is required");
+  }
+
+  const query = {};
+  if (email) query.email = email;
+  if (phoneNumber) query.phoneNumber = phoneNumber;
+
+  const user = await User.findOne(query).select(
+    "-password -resetPasswordOtp -resetPasswordExpireTime -refressToken -__v"
+  );
+
+  if (!user) {
+    throw new customError(404, "User not found");
+  }
+
+  const maskedContact = email
+    ? email.replace(/(.{2})(.*)(@.*)/, "$1***$3")
+    : (phoneNumber || user.phoneNumber).replace(
+        /(\d{3})(\d{4})(\d{4})/,
+        "$1****$3"
+      );
+
+  apiResponse.senSuccess(res, 200, "User fetched successfully", {
+    fristName: user.fristName,
+    email: user.email || null,
+    phoneNumber: user.phoneNumber ? maskedContact : null,
+    isEmailverifyed: user.isEmailverifyed || false,
+    isPhoneVerifyed: user.isPhoneVerifyed || false,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+  });
+});
 /**
  * todo : refreshtoken -----> making a refresh token and save it database
  * */
-
 exports.getrefreshtoken = asyncHandeler(async (req, res) => {
-  const token = req.headers.cookie.replace("refreshToken=", " ");
-  console.log(token);
+  const token = req.cookies.refreshToken;
 
   if (!token) {
     throw new customError(401, "Token not found");
   }
+  const decode = jwt.verify(token, process.env.REFRESHTOKEN_SECRET.trim());
 
-  const finduser = await User.findOne({ refressToken: token });
+  if (!decode) {
+    throw new customError(401, "decode Token invalid");
+  }
+  const finduser = await User.findById(decode.userid);
 
   if (!finduser) {
     throw new customError(401, "user not found");
   }
+  console.log("finduser:-", finduser);
+  const accesstoken = await finduser.generateAccessToken();
 
-  const accesstoken = finduser.generateAccessToken();
-
-  apiResponse.senSuccess(res, 200, "Login Successful", {
+  apiResponse.senSuccess(res, 200, "New Token Generate Successful", {
     accessToken: accesstoken,
     username: finduser.fristName,
     email: finduser.email,

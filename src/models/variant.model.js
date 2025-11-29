@@ -8,7 +8,7 @@ const variantSchema = new Schema(
   {
     product: {
       type: Types.ObjectId,
-      ref: "Product",
+      ref: "Product", 
       required: true,
     },
     slug: {

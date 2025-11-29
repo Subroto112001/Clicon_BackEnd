@@ -28,6 +28,12 @@ const subCategorySchema = new Schema(
       type: Boolean,
       default: true,
     },
+    product: [
+      {
+        type: Types.ObjectId,
+        ref: "Product",
+      },
+    ]
   },
   { timestamps: true }
 );

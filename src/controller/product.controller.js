@@ -9,78 +9,107 @@ const { customError } = require("../utils/customError");
 const { validateProduct } = require("../validation/product.validation.js");
 const { generateProductqrcode } = require("../helpers/qrCodeGenerator.js");
 const { barcodeGenerator } = require("../helpers/barcodeGenerator.js");
-
+const subcategoryModel = require("../models/Subcategory.model.js");
 // @desc create product function
 exports.createProduct = asyncHandeler(async (req, res) => {
-  const { name, description, price, category } = req.body;
-
   // Validate request body
   const data = await validateProduct(req);
   if (!data) {
     throw new customError(400, "validation failed");
   }
+
   let AllImageArray = [];
-  for (let image of data.images) {
-    const imageAsset = await uploadImageColude(image.path);
-    AllImageArray.push(imageAsset);
+
+  // Only process images if provided
+  if (data.images && Array.isArray(data.images) && data.images.length > 0) {
+    for (let image of data.images) {
+      // image.path থাকতে হবে
+      if (image?.path) {
+        const imageAsset = await uploadImageColude(image.path);
+        AllImageArray.push(imageAsset);
+      }
+    }
   }
-  // now save the data into database
-  const product = await productModel.create({ ...data, image: AllImageArray });
+
+  // Save to database (image থাকলে array যাবে, না থাকলে empty array)
+  const product = await productModel.create({
+    ...data,
+    image: AllImageArray,
+  });
+
   if (!product) {
     throw new customError(404, "Product not created");
   }
-  // generate qr code
+  const subcategory = await subcategoryModel.findOneAndUpdate(
+    { _id: data.subCategory },
+    { $push: { product: product._id } },
+    { new: true }
+  );
+
+  if (!subcategory) {
+    throw new customError(501, "Product created failed!");
+  }
+  // Generate QR code
   const qrcodelink = `${process.env.FONT_END_URL}`;
-
   const qrCode = await generateProductqrcode(qrcodelink);
-  console.log("Qrcode is :-", qrCode);
 
-  // generate barcode
+  // Generate barcode
   const barcodeText = `${product.sku}-${product.name.slice(0, 3)}-${new Date()
     .toString()
     .slice(0, 4)}`;
-  const barcode = await barcodeGenerator("barcodeText");
+  const barcode = await barcodeGenerator(barcodeText);
 
-  console.log("Barcode is :- ", barcode);
   product.qrCode = qrCode;
   product.barCode = barcode;
+
   await product.save();
-  // Send response
-  console.log("Created SUccessFully");
+
   apiResponse.senSuccess(res, 201, "Product created successfully", product);
 });
+
 // @desc get all product
 exports.getAllProducts = asyncHandeler(async (req, res) => {
-  const { sort } = req.query;
+  const { sort, type } = req.query;
   let sortquery = {};
+  let typeQuery = {};
 
   if (sort === "created-descending") {
     sortquery = { createdAt: -1 };
   } else if (sort === "created-ascending") {
     sortquery = { createdAt: 1 };
   } else if (sort === "price-ascending") {
-    sortquery = { retailPrice: 1 }; // make sure this field exists
+    sortquery = { retailPrice: 1 };
   } else if (sort === "price-descending") {
     sortquery = { retailPrice: -1 };
+  } else if (sort === "alfa-ascending") {
+    sortquery = { name: 1 };
+  } else if (sort === "alfa-descending") {
+    sortquery = { name: -1 };
   }
-   else if (sort === "alfa-ascending") {
-     sortquery = { name: 1 };
-   } else if (sort === "alfa-descending") {
-     sortquery = { name: -1 };
-   }
 
+  if (type === "single") {
+    typeQuery = { variantType: "SingleVariant" };
+  } else if (type === "multi") {
+    typeQuery = { variantType: "MultipleVariant" };
+  }
+
+  // if (type == "single") {
+  //   typeQuery = { variantType: "SingleVariant" };
+  // } else if (type == "multi") {
+  //   typeQuery = { variantType: "MultipleVariant" };
+  // }
   const products = await productModel
-    .find()
+    .find(typeQuery)
     .sort(sortquery)
     .populate("category")
-    .populate("brand").populate("variant");
+    .populate("brand")
+    .populate("variant");
 
   if (!products || products.length === 0) {
     throw new customError(404, "No products found");
   }
   apiResponse.senSuccess(res, 200, "Products fetched successfully", products);
 });
-
 
 // @desc get single product
 exports.getSingleProduct = asyncHandeler(async (req, res) => {
@@ -220,7 +249,7 @@ exports.getProductByCategory = asyncHandeler(async (req, res) => {
   }
   if (brand) {
     if (Array.isArray(brand)) {
-      filterQuery = { ...filterQuery, brand: { $in:brand } };
+      filterQuery = { ...filterQuery, brand: { $in: brand } };
     }
 
     filterQuery = { ...filterQuery, brand: brand };
@@ -229,7 +258,7 @@ exports.getProductByCategory = asyncHandeler(async (req, res) => {
   }
   if (tag) {
     if (Array.isArray(tag)) {
-      filterQuery = { ...filterQuery, tag: { $in:tag } };
+      filterQuery = { ...filterQuery, tag: { $in: tag } };
     }
 
     filterQuery = { ...filterQuery, tag: tag };
